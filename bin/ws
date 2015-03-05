@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+
+var WebSocketServer = require("../lib/websocket-server");
+var ws = new WebSocketServer({
+    // port: 3001,
+    events: {
+        text: [
+
+            // function (str, conn) {   /* broadcast */ ws.broadcast(str); },
+            // function (str, conn) {   /* broadcast SCREAM!!! */ ws.broadcast((str || '').toUpperCase() + '!!!'); }
+
+            /*
+                {
+                    "request":{
+                        "jobsRunning":true,
+                        "setProfile":{"displayName":"Chris Maples"},
+                        "connections":true
+                    }
+                }
+             */
+            function(msg, conn) {
+                //{"request":{"jobsRunning":true}}
+                if (ws.utility.isDataRequest(msg, 'jobsRunning') || conn.path == '/jobs/status') {
+                    msg = ws.parseJSON(msg);
+                    conn.Data = conn.Data || {};
+                    conn.Data.jobsRunning = App.JobManager.running();
+                }
+            },
+            function(msg, conn) {
+                //{"request":{"setProfile":{"displayName":"Chris Maples"}}}
+                if (ws.utility.isDataRequest(msg, 'setProfile')) {
+                    msg = ws.parseJSON(msg);
+                    conn.Profile = msg.request.setProfile;
+                    conn.Data = conn.Data || {};
+                    conn.Data.setProfile = true;
+                }
+            },
+            function(msg, conn) {
+                //{"request":{"connections":true}}
+                if (ws.utility.isDataRequest(msg, 'connections')) {
+                    var data = {};
+                    ws.server.connections.forEach(function (conn) {
+                        data[conn.key] = conn.Profile || {};
+                    });
+                    conn.Data = conn.Data || {};
+                    conn.Data.connections = data;
+                }
+            }
+        ],
+        close: []
+    },
+    utility: {
+        isDataRequest: function(msg, type) {
+            if (ws.isJSON(msg)) {
+                msg = ws.parseJSON(msg);
+                if (msg.request && type in msg.request) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+});
+
+ws.start();
