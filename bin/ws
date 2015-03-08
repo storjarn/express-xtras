@@ -63,3 +63,5 @@ var ws = new WebSocketServer({
 });
 
 ws.start();
+
+module.exports = ws;
