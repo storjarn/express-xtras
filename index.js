@@ -26,17 +26,11 @@ module.exports = function(app, basePath, config) {
     }
     app.config = config = _.extend(defaultConfig, config);
 
-    app.log = (function() {
-        var logger = require('./lib/loggers')('util');
-        return function() {
-            var args = [].slice.call(arguments);
-            args.unshift(app.config.appName + ": %j");
-            logger.info.apply(null, args);
-        };
-    })();
+    app.loggers = require('./lib/loggers');
+    app.log = app.loggers('util', app.config.appName).info;
 
     if (typeof config.logger === 'string') {
-        config.logger = require('./lib/loggers')(config.logger);
+        config.logger = app.loggers(config.logger);
     }
     if (typeof config.viewEngine.module === 'string') {
         config.viewEngine.module = require(config.viewEngine.module);
