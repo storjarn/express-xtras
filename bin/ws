@@ -27,6 +27,14 @@ var ws = new WebSocketServer({
                 }
             },
             function(msg, conn) {
+                //{"request":{"broadcast":"hey"}}
+                if (ws.utility.isDataRequest(msg, 'broadcast') || conn.path == '/broadcast') {
+                    msg = ws.parseJSON(msg);
+                    conn.Data = null;
+                    ws.broadcast(msg.request.broadcast, conn);
+                }
+            },
+            function(msg, conn) {
                 //{"request":{"setProfile":{"displayName":"Chris Maples"}}}
                 if (ws.utility.isDataRequest(msg, 'setProfile')) {
                     msg = ws.parseJSON(msg);
