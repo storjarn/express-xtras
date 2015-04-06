@@ -1,33 +1,36 @@
 module.exports = function(app, basePath, config) {
     config = config || {};
-
     var express = require('express');
-    var path = require('path');
-    var fs = require('fs');
-    var _ = require('underscore');
 
-    var defaultConfig = {
-        appName: 'express-xtras',
-        basePath: basePath,
-        favIcon: 'public/favicon.ico',
-        viewPath: 'views',
-        publicPath: 'public',
-        logger: 'morgan',
-        viewEngine: {
-            name: 'ejs',
-            module: require('ejs-locals')
-        }
-    };
+    /*
+    ---------------------------------
+        Utilities
+    ---------------------------------
+    */
+    app.set('utils', {
+        fs: require('fs'),
+        Path: require('path'),
+        _: require('underscore'),
+        crypto: require('./lib/crypto-xtras'),
+        request: require('request')
+    });
+    var utils = app.get('utils');
 
-    var configPath = path.join(basePath, 'config.js');
-    if (fs.existsSync(configPath)) {
-        var tmpConfig = require(configPath);
-        config = _.extend(tmpConfig, config);
-    }
-    app.config = config = _.extend(defaultConfig, config);
+    /*
+    ---------------------------------
+        Config
+    ---------------------------------
+    */
+    require('./config')(app, basePath, config);
+    config = app.get('config');
 
+    /*
+    ---------------------------------
+        Logging
+    ---------------------------------
+    */
     app.loggers = require('./lib/loggers');
-    app.log = app.loggers('util', app.config.appName).info;
+    app.log = app.loggers('util', config.appName).info;
 
     if (typeof config.logger === 'string') {
         config.logger = app.loggers(config.logger);
@@ -36,27 +39,39 @@ module.exports = function(app, basePath, config) {
         config.viewEngine.module = require(config.viewEngine.module);
     }
 
+    /*
+    ---------------------------------
+        View engine
+    ---------------------------------
+    */
+    require('./lib/view')(app);
+
+    /*
+    ---------------------------------
+        Standard middleware
+    ---------------------------------
+    */
     var favicon = require('serve-favicon');
     var cookieParser = require('cookie-parser');
     var bodyParser = require('body-parser');
-
-    // view engine setup
-    app.set('views', path.join(basePath, config.viewPath));
-    app.engine(config.viewEngine.name, config.viewEngine.module);
-    app.set('view engine', config.viewEngine.name);
-
     // favicon setup
-    var iconPath = path.join(basePath, config.favIcon);
-    if (fs.existsSync(iconPath)) {
+    var iconPath = utils.Path.join(basePath, config.favIcon);
+    if (utils.fs.existsSync(iconPath)) {
         app.use(favicon(iconPath));
     }
     // express base middleware setup
     app.use(config.logger);
     app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(bodyParser.urlencoded({
+        extended: false
+    }));
     app.use(cookieParser());
-    app.use(express.static(path.join(basePath, config.publicPath)));
+    app.use(express.static(utils.Path.join(basePath, config.publicPath)));
 
-    // express xtras middleware setup
-    require('./lib/init')(app, basePath);
+    /*
+    ---------------------------------
+        Xtras middleware
+    ---------------------------------
+    */
+    require('./lib/init')(app);
 };
