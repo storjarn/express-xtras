@@ -12,7 +12,8 @@ module.exports = function(app, basePath, config) {
         Path: require('path'),
         _: require('underscore'),
         crypto: require('./lib/crypto-xtras'),
-        request: require('request')
+        request: require('request'),
+        async: require('async')
     });
     var utils = app.get('utils');
 
