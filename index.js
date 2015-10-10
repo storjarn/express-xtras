@@ -13,7 +13,8 @@ module.exports = function(app, basePath, config) {
         _: require('underscore'),
         crypto: require('./lib/crypto-xtras'),
         request: require('request'),
-        async: require('async')
+        async: require('async'),
+	Checkit : require('checkit')
     });
     var utils = app.get('utils');
 
